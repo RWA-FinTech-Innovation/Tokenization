@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agentic Consortium Chain"
+  short_description: "Design AI-agent-native consortium chain baselines"
+  default_prompt: "Use $agentic-consortium-chain-baseline to design an AI-agent-native consortium blockchain baseline."

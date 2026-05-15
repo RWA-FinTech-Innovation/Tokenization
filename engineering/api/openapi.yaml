@@ -1,0 +1,814 @@
+openapi: 3.1.0
+info:
+  title: Agentic Consortium Chain Tokenization API
+  version: 0.1.0
+  description: >
+    Intent-first API for an AI-agent-native consortium-chain tokenization system.
+    State-changing asset APIs create AgentTask records and never bypass Agent execution,
+    policy validation, controlled tools, or audit.
+servers:
+  - url: https://api.example.com
+security:
+  - bearerAuth: []
+  - requestSignature: []
+
+paths:
+  /agent/tasks:
+    post:
+      operationId: createAgentTask
+      summary: Create an Agent-executed task
+      tags: [AgentTasks]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAgentTaskRequest'
+      responses:
+        '202':
+          description: Task accepted for Agent execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateAgentTaskResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
+
+  /agent/tasks/{task_id}:
+    get:
+      operationId: getAgentTask
+      summary: Get AgentTask status and execution summary
+      tags: [AgentTasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: AgentTask
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/tasks/{task_id}/approve:
+    post:
+      operationId: approveAgentTask
+      summary: Submit an institution authorization signal for a task
+      description: Authorization enables Agent execution but does not directly mutate system state.
+      tags: [AgentTasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveAgentTaskRequest'
+      responses:
+        '202':
+          description: Authorization accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agent/tasks/{task_id}/cancel:
+    post:
+      operationId: cancelAgentTask
+      summary: Cancel a task before irreversible execution
+      tags: [AgentTasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '202':
+          description: Cancellation accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentTask'
+        '409':
+          description: Task already reached an irreversible state
+
+  /agent/tasks/{task_id}/audit:
+    get:
+      operationId: getAgentTaskAudit
+      summary: Get audit trail for a task
+      tags: [Audit]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Audit trail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditTrail'
+
+  /agent/tasks/{task_id}/events:
+    get:
+      operationId: getAgentTaskEvents
+      summary: Get task lifecycle, tool, and chain events
+      tags: [AgentTasks]
+      parameters:
+        - $ref: '#/components/parameters/TaskId'
+      responses:
+        '200':
+          description: Task events
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [events]
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskEvent'
+
+  /assets/register:
+    post:
+      operationId: registerAssetIntent
+      summary: Create an AgentTask for asset registration
+      tags: [CompatibilityAssetTasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterAssetIntent'
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+
+  /assets/issue:
+    post:
+      operationId: issueAssetIntent
+      summary: Create an AgentTask for asset issuance
+      tags: [CompatibilityAssetTasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueAssetIntent'
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+
+  /assets/transfer:
+    post:
+      operationId: transferAssetIntent
+      summary: Create an AgentTask for asset transfer
+      tags: [CompatibilityAssetTasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferAssetIntent'
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+
+  /assets/freeze:
+    post:
+      operationId: freezeAssetIntent
+      summary: Create an AgentTask for asset freeze
+      tags: [CompatibilityAssetTasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FreezeAssetIntent'
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+
+  /assets/redeem:
+    post:
+      operationId: redeemAssetIntent
+      summary: Create an AgentTask for asset redemption
+      tags: [CompatibilityAssetTasks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedeemAssetIntent'
+      responses:
+        '202':
+          $ref: '#/components/responses/TaskAccepted'
+
+  /assets/{asset_id}:
+    get:
+      operationId: getAsset
+      summary: Query indexed asset state
+      tags: [Assets]
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset index state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+
+  /transactions/{tx_hash}:
+    get:
+      operationId: getTransaction
+      summary: Query transaction record
+      tags: [Transactions]
+      parameters:
+        - name: tx_hash
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Transaction record
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionRecord'
+
+  /audit/assets/{asset_id}:
+    get:
+      operationId: getAssetAuditTrail
+      summary: Query full asset lifecycle audit trail
+      tags: [Audit]
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset audit trail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditTrail'
+
+  /compliance/licenses:
+    get:
+      operationId: listLicensedInstitutions
+      summary: List licensed or permissioned institution records
+      tags: [Compliance]
+      responses:
+        '200':
+          description: Licensed institution registry
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  licensed_institutions:
+                    type: array
+                    items:
+                      type: object
+
+  /compliance/kyc-aml:
+    get:
+      operationId: listKycAmlProfiles
+      summary: List KYC/AML profile snapshots
+      tags: [Compliance]
+      responses:
+        '200':
+          description: KYC/AML profile snapshots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  kyc_aml_profiles:
+                    type: array
+                    items:
+                      type: object
+
+  /legal/documents:
+    get:
+      operationId: listLegalDocuments
+      summary: List legal documents used by token rights mappings
+      tags: [Legal]
+      responses:
+        '200':
+          description: Legal documents
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /legal/rights:
+    get:
+      operationId: listAssetRightsMappings
+      summary: List asset-to-rights mappings
+      tags: [Legal]
+      responses:
+        '200':
+          description: Rights mappings
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /legal/rights/{asset_id}:
+    get:
+      operationId: getAssetRightsMapping
+      summary: Get rights mapping for an asset
+      tags: [Legal]
+      parameters:
+        - name: asset_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Asset rights mapping
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /custody/wallets:
+    get:
+      operationId: listCustodyWallets
+      summary: List custody wallet records
+      tags: [Custody]
+      responses:
+        '200':
+          description: Custody wallets
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /custody/signatures:
+    get:
+      operationId: listSignatureRequests
+      summary: List transaction signature requests
+      tags: [Custody]
+      responses:
+        '200':
+          description: Signature requests
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /oracle/attestations:
+    get:
+      operationId: listOracleAttestations
+      summary: List external evidence and oracle attestations
+      tags: [Oracle]
+      responses:
+        '200':
+          description: Oracle attestations
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    requestSignature:
+      type: apiKey
+      in: header
+      name: X-Request-Signature
+
+  parameters:
+    TaskId:
+      name: task_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 128
+
+  responses:
+    TaskAccepted:
+      description: AgentTask accepted
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreateAgentTaskResponse'
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Missing or invalid authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    IdempotencyConflict:
+      description: Idempotency key reused with different request payload
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    CreateAgentTaskRequest:
+      type: object
+      required: [requester, requester_signature, intent, authorization_scope, idempotency_key]
+      properties:
+        requester:
+          type: string
+        requester_signature:
+          type: string
+        intent:
+          type: string
+        constraints:
+          type: object
+          additionalProperties: true
+        attachments:
+          type: array
+          items:
+            type: string
+        authorization_scope:
+          type: array
+          items:
+            type: string
+        risk_preference:
+          $ref: '#/components/schemas/RiskLevel'
+        idempotency_key:
+          type: string
+
+    CreateAgentTaskResponse:
+      type: object
+      required: [task_id, status, intent_hash, estimated_risk_level, audit_url]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [created]
+        intent_hash:
+          type: string
+        estimated_risk_level:
+          $ref: '#/components/schemas/RiskLevel'
+        audit_url:
+          type: string
+
+    ApproveAgentTaskRequest:
+      type: object
+      required: [approver, approval_signature, authorization_scope]
+      properties:
+        approver:
+          type: string
+        approval_signature:
+          type: string
+        authorization_scope:
+          type: array
+          items:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+
+    AgentTask:
+      type: object
+      required: [task_id, requester, requester_type, intent_hash, execution_status, idempotency_key, created_at, updated_at]
+      properties:
+        task_id:
+          type: string
+          format: uuid
+        requester:
+          type: string
+        requester_type:
+          type: string
+          enum: [user, institution, system]
+        intent_hash:
+          type: string
+        constraints:
+          type: object
+          additionalProperties: true
+        authorization_scope:
+          type: array
+          items:
+            type: string
+        assigned_agent:
+          type: string
+        plan_hash:
+          type: string
+        policy_result:
+          type: string
+          enum: [approved, rejected, need_policy_review]
+        execution_status:
+          $ref: '#/components/schemas/TaskStatus'
+        related_tx_hashes:
+          type: array
+          items:
+            type: string
+        evidence_hash:
+          type: string
+        idempotency_key:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Asset:
+      type: object
+      required: [asset_id, asset_type, issuer, owner, amount, metadata_hash, status]
+      properties:
+        asset_id:
+          type: string
+        asset_type:
+          type: string
+        issuer:
+          type: string
+        owner:
+          type: string
+        amount:
+          type: string
+        metadata_hash:
+          type: string
+        status:
+          type: string
+          enum: [created, issued, frozen, transferred, redeemed, burned]
+        created_by_task_id:
+          type: string
+          format: uuid
+        updated_by_task_id:
+          type: string
+          format: uuid
+
+    TransactionRecord:
+      type: object
+      required: [tx_hash, task_id, contract_name, method_name, caller, status]
+      properties:
+        tx_hash:
+          type: string
+        task_id:
+          type: string
+          format: uuid
+        contract_name:
+          type: string
+        method_name:
+          type: string
+        caller:
+          type: string
+        status:
+          type: string
+          enum: [pending, confirmed, failed, reverted]
+        block_height:
+          type: integer
+          format: int64
+        block_hash:
+          type: string
+
+    AuditTrail:
+      type: object
+      required: [subject_id, audit_logs, tool_calls, transactions]
+      properties:
+        subject_id:
+          type: string
+        audit_logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransactionRecord'
+
+    AuditLog:
+      type: object
+      required: [log_id, action, target_id, agent_task_id, request_hash, result, evidence_hash, created_at]
+      properties:
+        log_id:
+          type: string
+          format: uuid
+        action:
+          type: string
+        target_id:
+          type: string
+        agent_task_id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+        tx_hash:
+          type: string
+        tool_call_hash:
+          type: string
+        request_hash:
+          type: string
+        result:
+          type: string
+          enum: [success, failed]
+        evidence_hash:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    ToolCall:
+      type: object
+      required: [tool_call_id, task_id, agent_id, tool_name, input_hash, risk_level, started_at]
+      properties:
+        tool_call_id:
+          type: string
+          format: uuid
+        task_id:
+          type: string
+          format: uuid
+        agent_id:
+          type: string
+        tool_name:
+          type: string
+        input_hash:
+          type: string
+        output_hash:
+          type: string
+        risk_level:
+          $ref: '#/components/schemas/RiskLevel'
+        policy_result:
+          type: string
+          enum: [approved, rejected, need_policy_review]
+        result:
+          type: string
+          enum: [success, failed]
+        started_at:
+          type: string
+          format: date-time
+        finished_at:
+          type: string
+          format: date-time
+
+    TaskEvent:
+      type: object
+      required: [event_type, timestamp, payload]
+      properties:
+        event_type:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: true
+
+    RegisterAssetIntent:
+      type: object
+      required: [requester, requester_signature, asset_id, asset_type, metadata_hash]
+      properties:
+        requester:
+          type: string
+        requester_signature:
+          type: string
+        asset_id:
+          type: string
+        asset_type:
+          type: string
+        metadata_hash:
+          type: string
+
+    IssueAssetIntent:
+      type: object
+      required: [requester, requester_signature, asset_id, owner, amount]
+      properties:
+        requester:
+          type: string
+        requester_signature:
+          type: string
+        asset_id:
+          type: string
+        owner:
+          type: string
+        amount:
+          type: string
+
+    TransferAssetIntent:
+      type: object
+      required: [requester, requester_signature, asset_id, from, to, amount]
+      properties:
+        requester:
+          type: string
+        requester_signature:
+          type: string
+        asset_id:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        amount:
+          type: string
+
+    FreezeAssetIntent:
+      type: object
+      required: [requester, requester_signature, asset_id, reason_hash]
+      properties:
+        requester:
+          type: string
+        requester_signature:
+          type: string
+        asset_id:
+          type: string
+        reason_hash:
+          type: string
+
+    RedeemAssetIntent:
+      type: object
+      required: [requester, requester_signature, asset_id, amount]
+      properties:
+        requester:
+          type: string
+        requester_signature:
+          type: string
+        asset_id:
+          type: string
+        amount:
+          type: string
+
+    RiskLevel:
+      type: string
+      enum: [low, medium, high, critical]
+
+    TaskStatus:
+      type: string
+      enum:
+        - created
+        - planning
+        - policy_checking
+        - tool_executing
+        - chain_confirming
+        - auditing
+        - succeeded
+        - failed
+        - recovering
+        - compensating
+        - policy_rejected
+        - cancelled
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

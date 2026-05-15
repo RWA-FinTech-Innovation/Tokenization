@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agentic Tokenization Console</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="System navigation">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">A</div>
+          <div>
+            <div class="brand-title">Agentic Chain</div>
+            <div class="brand-subtitle">Tokenization MVP</div>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a class="nav-item active" href="#operate">操作台</a>
+          <a class="nav-item" href="#tasks">任务</a>
+          <a class="nav-item" href="#audit">审计</a>
+        </nav>
+
+        <section class="network-card" aria-label="Execution topology">
+          <div class="section-kicker">Execution Path</div>
+          <svg class="network-map" viewBox="0 0 260 170" role="img" aria-label="Agent execution path">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#557076"></path>
+              </marker>
+            </defs>
+            <line x1="58" y1="46" x2="130" y2="46" marker-end="url(#arrow)" />
+            <line x1="130" y1="58" x2="86" y2="112" marker-end="url(#arrow)" />
+            <line x1="130" y1="58" x2="174" y2="112" marker-end="url(#arrow)" />
+            <line x1="86" y1="124" x2="174" y2="124" marker-end="url(#arrow)" />
+            <g>
+              <rect x="18" y="24" width="74" height="44" rx="8" />
+              <text x="55" y="51">Intent</text>
+            </g>
+            <g>
+              <rect x="104" y="24" width="78" height="44" rx="8" />
+              <text x="143" y="51">Agent</text>
+            </g>
+            <g>
+              <rect x="42" y="102" width="88" height="44" rx="8" />
+              <text x="86" y="129">Policy</text>
+            </g>
+            <g>
+              <rect x="154" y="102" width="88" height="44" rx="8" />
+              <text x="198" y="129">Chain</text>
+            </g>
+          </svg>
+        </section>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>香港 RWA Agent 执行台</h1>
+            <p>HK PE Fund I 的基金认购、项目投资、算力收益确认全部进入 AgentTask、托管签名、链上交易和审计证据。</p>
+          </div>
+          <div class="topbar-actions">
+            <span id="healthPill" class="status-pill neutral">检查中</span>
+            <button id="refreshBtn" class="icon-button" type="button" title="刷新资产和审计">⟳</button>
+            <button id="resetBtn" class="danger-button" type="button">重置演示数据</button>
+          </div>
+        </header>
+
+        <section class="deal-board" aria-label="HK RWA deal cockpit">
+          <div class="deal-command">
+            <div class="section-kicker">Active Deal</div>
+            <h2>HK PE Fund I</h2>
+            <p>LP 资金进入基金份额，GP 投向 AI Compute Infrastructure Ltd，算力收益由托管方和 oracle 形成可审计证据。</p>
+            <div class="deal-actions">
+              <a href="#fund-share-card">认购份额</a>
+              <a href="#portfolio-card">投资项目</a>
+              <a href="#compute-card">收益审计</a>
+            </div>
+          </div>
+
+          <div class="deal-lanes" aria-label="Business lanes">
+            <article class="deal-lane fund">
+              <span>FundShareToken</span>
+              <strong>HKD 1,000,000</strong>
+              <small>alice -> HK PE Fund I</small>
+            </article>
+            <article class="deal-lane portfolio">
+              <span>PortfolioEquityRWA</span>
+              <strong>HKD 3,000,000</strong>
+              <small>issuer_A -> AI Compute Infrastructure Ltd</small>
+            </article>
+            <article class="deal-lane compute">
+              <span>ComputePowerToken</span>
+              <strong>HKD 25,000</strong>
+              <small>custodian_A -> bob</small>
+            </article>
+          </div>
+
+          <div class="execution-rail" aria-label="Agent execution controls">
+            <div class="rail-step"><span>01</span><strong>KYC / AML</strong><small>LP、GP、托管方</small></div>
+            <div class="rail-step"><span>02</span><strong>Legal Rights</strong><small>文件哈希 + 权益映射</small></div>
+            <div class="rail-step"><span>03</span><strong>Custody Sign</strong><small>KMS/HSM mock</small></div>
+            <div class="rail-step"><span>04</span><strong>Chain + Audit</strong><small>tx hash + evidence hash</small></div>
+          </div>
+        </section>
+
+        <section class="metrics-grid" aria-label="MVP metrics">
+          <div class="metric">
+            <span class="metric-label">Current Owner</span>
+            <strong id="metricOwner">-</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">AgentTasks</span>
+            <strong id="metricTasks">0</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Control Evidence</span>
+            <strong id="metricTools">0</strong>
+          </div>
+          <div class="metric">
+            <span class="metric-label">Chain Events</span>
+            <strong id="metricEvents">0</strong>
+          </div>
+        </section>
+
+        <section class="panel identity-panel">
+          <div class="panel-header">
+            <div>
+              <div class="section-kicker">Identity Model</div>
+              <h2>机构与用户</h2>
+            </div>
+            <button id="refreshIdentityBtn" class="secondary-button" type="button">刷新身份</button>
+          </div>
+          <div id="identityList" class="identity-list empty">暂无身份数据</div>
+        </section>
+
+        <section class="panel controls-panel">
+          <div class="panel-header">
+            <div>
+              <div class="section-kicker">Institutional Controls</div>
+              <h2>合规与托管落地点</h2>
+            </div>
+            <button id="refreshControlsBtn" class="secondary-button" type="button">刷新控制项</button>
+          </div>
+          <div id="controlsList" class="control-grid empty">暂无控制项</div>
+        </section>
+
+        <section id="operate" class="workspace">
+          <div id="fund-share-card" class="panel form-panel asset-work-card fund">
+            <div class="panel-header">
+              <div>
+                <div class="section-kicker">FundShareToken</div>
+                <h2>LP 认购基金份额</h2>
+              </div>
+              <span class="badge">SFC / KYC</span>
+            </div>
+            <div class="work-card-summary">
+              <span>alice</span>
+              <span>HKD 1,000,000</span>
+              <span>issueFundShareToken</span>
+            </div>
+            <form id="subscribeForm" class="form-grid">
+              <label>
+                Share Token ID
+                <input id="fundShareAssetId" name="asset_id" required value="fund-share-hkpe-alice-001" />
+              </label>
+              <label>
+                Fund ID
+                <input name="fund_id" required value="HK_PE_FUND_I" />
+              </label>
+              <label>
+                LP
+                <input name="lp" required value="alice" />
+              </label>
+              <label>
+                GP / Manager
+                <input name="fund_manager" required value="issuer_A" />
+              </label>
+              <label>
+                Share Units
+                <input name="share_units" required type="number" min="1" value="1000" />
+              </label>
+              <label>
+                Subscription HKD
+                <input name="subscription_amount_hkd" required type="number" min="1" value="1000000" />
+              </label>
+              <button class="primary-button full" type="submit"><span>+</span> 创建认购任务</button>
+            </form>
+          </div>
+
+          <div id="portfolio-card" class="panel form-panel asset-work-card portfolio">
+            <div class="panel-header">
+              <div>
+                <div class="section-kicker">PortfolioEquityRWA</div>
+                <h2>GP 投资项目</h2>
+              </div>
+              <span class="badge amber">IC vote</span>
+            </div>
+            <div class="work-card-summary">
+              <span>issuer_A</span>
+              <span>HKD 3,000,000</span>
+              <span>issuePortfolioEquityRWA</span>
+            </div>
+            <form id="portfolioForm" class="form-grid">
+              <label>
+                Equity RWA ID
+                <input id="portfolioAssetId" name="asset_id" required value="portfolio-equity-aicomp-001" />
+              </label>
+              <label>
+                Fund ID
+                <input name="fund_id" required value="HK_PE_FUND_I" />
+              </label>
+              <label>
+                GP / Manager
+                <input name="fund_manager" required value="issuer_A" />
+              </label>
+              <label>
+                Portfolio Company
+                <input name="portfolio_company" required value="AI Compute Infrastructure Ltd" />
+              </label>
+              <label>
+                Equity Units
+                <input name="equity_units" required type="number" min="1" value="2500" />
+              </label>
+              <label>
+                Investment HKD
+                <input name="investment_amount_hkd" required type="number" min="1" value="3000000" />
+              </label>
+              <button class="primary-button full" type="submit"><span>→</span> 创建投资任务</button>
+            </form>
+          </div>
+
+          <div id="compute-card" class="panel form-panel asset-work-card compute">
+            <div class="panel-header">
+              <div>
+                <div class="section-kicker">ComputePowerToken</div>
+                <h2>算力 Token 收益审计</h2>
+              </div>
+              <span class="badge ok">revenue trail</span>
+            </div>
+            <div class="work-card-summary">
+              <span>custodian_A</span>
+              <span>HKD 25,000</span>
+              <span>recordComputeRevenue</span>
+            </div>
+            <form id="computeForm" class="form-grid">
+              <label>
+                Compute Token ID
+                <input id="computeAssetId" name="asset_id" required value="compute-token-aicomp-001" />
+              </label>
+              <label>
+                Compute Project
+                <input name="compute_project" required value="AI Compute Cluster A" />
+              </label>
+              <label>
+                Operator
+                <input name="operator" required value="custodian_A" />
+              </label>
+              <label>
+                Beneficiary
+                <input name="beneficiary" required value="bob" />
+              </label>
+              <label>
+                Compute Units
+                <input name="compute_units" required type="number" min="1" value="500" />
+              </label>
+              <label>
+                Revenue HKD
+                <input name="revenue_amount_hkd" required type="number" min="1" value="25000" />
+              </label>
+              <button class="primary-button full" type="submit"><span>✓</span> 记录收益审计</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="detail-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="section-kicker">Current State</div>
+                <h2>资产状态</h2>
+              </div>
+              <button id="queryAssetBtn" class="secondary-button" type="button">查询</button>
+            </div>
+            <div id="assetState" class="state-view empty">暂无资产状态</div>
+          </div>
+
+          <div id="tasks" class="panel">
+            <div class="panel-header">
+              <div>
+                <div class="section-kicker">Execution</div>
+                <h2>任务记录</h2>
+              </div>
+            </div>
+            <div id="taskList" class="task-list empty">暂无任务</div>
+          </div>
+        </section>
+
+        <section id="audit" class="panel audit-panel">
+          <div class="panel-header">
+            <div>
+              <div class="section-kicker">Verifiable Trail</div>
+              <h2>审计轨迹</h2>
+            </div>
+            <button id="queryAuditBtn" class="secondary-button" type="button">查询审计</button>
+          </div>
+          <div class="audit-columns">
+            <div>
+              <h3>Audit Logs</h3>
+              <div id="auditLogs" class="timeline empty">暂无审计日志</div>
+            </div>
+            <div>
+              <h3>Tool Calls</h3>
+              <div id="toolCalls" class="timeline empty">暂无工具调用</div>
+            </div>
+            <div>
+              <h3>Chain Events</h3>
+              <div id="chainEvents" class="timeline empty">暂无链事件</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel raw-panel">
+          <div class="panel-header">
+            <div>
+              <div class="section-kicker">Response</div>
+              <h2>最近一次 API 响应</h2>
+            </div>
+          </div>
+          <pre id="rawOutput">{}</pre>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js"></script>
+  </body>
+</html>
